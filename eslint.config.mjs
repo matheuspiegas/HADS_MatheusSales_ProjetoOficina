@@ -1,25 +1,39 @@
-import { dirname } from "path";
-import { fileURLToPath } from "url";
-import { FlatCompat } from "@eslint/eslintrc";
+import js from "@eslint/js";
+import { defineConfig } from "eslint/config";
+import eslintConfigPrettier from "eslint-config-prettier/flat";
+import pluginReact from "eslint-plugin-react";
+import simpleImportSort from "eslint-plugin-simple-import-sort";
+import globals from "globals";
+import tseslint from "typescript-eslint";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-const compat = new FlatCompat({
-  baseDirectory: __dirname,
-});
-
-const eslintConfig = [
-  ...compat.extends("next/core-web-vitals", "next/typescript"),
+export default defineConfig([
   {
-    ignores: [
-      "node_modules/**",
-      ".next/**",
-      "out/**",
-      "build/**",
-      "next-env.d.ts",
-    ],
+    files: ["**/*.{js,mjs,cjs,ts,mts,cts,jsx,tsx}"],
+    plugins: { js },
+    extends: ["js/recommended"],
+    languageOptions: { globals: { ...globals.browser, ...globals.node } },
   },
-];
-
-export default eslintConfig;
+  tseslint.configs.recommended,
+  {
+    rules: {
+      "@typescript-eslint/no-unused-vars": "off",
+      "@typescript-eslint/no-unused-expressions": "off",
+      "@typescript-eslint/no-explicit-any": "off",
+    },
+  },
+  // pluginReact.configs.flat.recommended,
+  pluginReact.configs.flat["jsx-runtime"],
+  {
+    plugins: {
+      "simple-import-sort": simpleImportSort,
+    },
+    rules: {
+      "simple-import-sort/imports": "warn",
+      "simple-import-sort/exports": "warn",
+    },
+  },
+  {
+    ignores: ["node_modules/", "dist/", ".next/"],
+  },
+  eslintConfigPrettier,
+]);
