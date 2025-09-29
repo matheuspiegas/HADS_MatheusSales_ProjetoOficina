@@ -4,9 +4,10 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { LoaderCircle } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
+import { useTheme } from "next-themes";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -32,6 +33,12 @@ type FormValues = z.infer<typeof formSchema>;
 
 const SignInForm = () => {
   const [isLoading, setIsLoading] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const { theme } = useTheme();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -57,12 +64,14 @@ const SignInForm = () => {
 
   return (
     <div className="flex h-screen w-full flex-col items-center justify-center space-y-6 p-6">
-      <Image
-        src="/logoFSBranca.png"
-        alt="Logo da empresa"
-        width={200}
-        height={200}
-      />
+      {mounted && (
+        <Image
+          src={theme === "dark" ? "/logo-dark.png" : "/logo-light.png"}
+          alt="Logo da empresa"
+          width={200}
+          height={200}
+        />
+      )}
       <div className="space-y-2 text-center">
         <h1 className="mb-2 text-center text-2xl font-bold">Login</h1>
         <p className="text-muted-foreground">Entre com suas credenciais</p>
