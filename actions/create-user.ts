@@ -4,6 +4,7 @@ import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 
 import { env } from "@/env";
+import { normalizeText } from "@/lib/normalization";
 import { withAuth } from "@/lib/with-auth";
 import { ActionsResponse } from "@/schemas";
 import { Database } from "@/schemas/database.types";
@@ -54,15 +55,15 @@ const createUserAction = async (
       },
     );
 
-    // Verificar se já existe funcionário com o mesmo email ou username
+    // Verificar se já existe funcionário com o mesmo email ou username normalizado
+    const normalizedUsername = normalizeText(userData.username);
     const { data: existingUsers, error: checkError } = await supabase
       .from("employees")
-      .select("email, username")
-      .or(`email.eq.${userData.email},username.eq.${userData.username}`);
-    console.log("Verificação de usuários existentes:", {
-      existingUsers,
-      checkError,
-    });
+      .select("email, username_normalized")
+      .or(
+        `email.eq.${userData.email},username_normalized.eq.${normalizedUsername}`,
+      );
+
     if (checkError) {
       console.error("Erro ao verificar dados existentes:", checkError);
       return {
@@ -79,7 +80,7 @@ const createUserAction = async (
           error: `Já existe um funcionário cadastrado com o email: ${userData.email}`,
         };
       }
-      if (existingUser.username === userData.username) {
+      if (existingUser.username_normalized === normalizedUsername) {
         return {
           success: false,
           error: `Já existe um funcionário cadastrado com o username: ${userData.username}`,

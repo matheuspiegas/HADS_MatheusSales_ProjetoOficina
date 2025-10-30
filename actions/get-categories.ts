@@ -2,6 +2,7 @@
 
 import { SupabaseClient } from "@supabase/supabase-js";
 
+import { normalizeText } from "@/lib/normalization";
 import { withAuth } from "@/lib/with-auth";
 import { ActionsResponse, Category } from "@/schemas";
 import { Database } from "@/schemas/database.types";
@@ -21,14 +22,15 @@ const getCategoriesAction = async (
 
     let query = supabase
       .from("transaction_categories")
-      .select("*", { count: "exact" });
+      .select("*, name_normalized", { count: "exact" });
 
     if (args?.search) {
-      query = query.ilike("name", `%${args.search}%`);
+      // Busca na coluna normalizada para ser case/accent-insensitive
+      query = query.ilike("name_normalized", `%${normalizeText(args.search)}%`);
     }
 
     // Aplicar paginação
-    query = query.range(start, end);
+    query = query.range(start, end).order("name", { ascending: true });
 
     // Executar a consulta
     const { data, error, count } = await query;

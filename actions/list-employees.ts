@@ -11,6 +11,7 @@ interface ListEmployeesFilters {
   limit?: number;
   status?: "Ativo" | "Inativo";
   role_id?: string;
+  search?: string | null;
 }
 
 const listEmployeesAction = async (
@@ -31,9 +32,10 @@ const listEmployeesAction = async (
       };
     }
 
-    const { page = 1, limit = 10, status, role_id } = filters;
+    const { page = 1, limit = 10, status, role_id, search } = filters;
     const start = (page - 1) * limit;
     const end = page * limit - 1;
+    console.log({ filters });
 
     // 2. Query base para buscar funcionários com roles
     let query = supabase
@@ -57,6 +59,11 @@ const listEmployeesAction = async (
     // 3. Aplicar filtros opcionais
     if (status) {
       query = query.eq("status", status);
+    }
+
+    if (search) {
+      console.log("pesquisa sendo realizada para:", search);
+      query = query.ilike("full_name", `%${search}%`);
     }
 
     if (role_id) {

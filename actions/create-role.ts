@@ -2,6 +2,7 @@
 
 import { SupabaseClient } from "@supabase/supabase-js";
 
+import { normalizeText } from "@/lib/normalization";
 import { withAuth } from "@/lib/with-auth";
 import { ActionsResponse } from "@/schemas";
 import { Database } from "@/schemas/database.types";
@@ -27,8 +28,10 @@ const createRoleAction = async (
       };
     }
 
+    const normalizedRoleName = normalizeText(roleData.name);
+
     // 2. Bloquear criação de cargo "Gerente" para proteger a lógica do sistema
-    if (roleData.name === "Gerente") {
+    if (normalizedRoleName === "gerente") {
       return {
         success: false,
         error:
@@ -36,11 +39,11 @@ const createRoleAction = async (
       };
     }
 
-    // 3. Verificar se já existe um cargo com o mesmo nome
+    // 3. Verificar se já existe um cargo com o mesmo nome (usando a coluna normalizada)
     const { data: existingRole, error: duplicateError } = await supabase
       .from("roles")
       .select("id")
-      .eq("name", roleData.name)
+      .eq("name_normalized", normalizedRoleName)
       .limit(1);
 
     if (duplicateError) {
@@ -68,6 +71,13 @@ const createRoleAction = async (
       .single();
 
     if (createError) {
+      // Tratar erro de unicidade do banco de dados como um fallback
+      if (createError.message.includes("duplicate key")) {
+        return {
+          success: false,
+          error: "Já existe um cargo com este nome.",
+        };
+      }
       return {
         success: false,
         error: createError.message || "Não foi possível criar o cargo.",

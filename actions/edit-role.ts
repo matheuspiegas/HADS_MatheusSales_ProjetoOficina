@@ -2,6 +2,7 @@
 
 import { SupabaseClient } from "@supabase/supabase-js";
 
+import { normalizeText } from "@/lib/normalization";
 import { withAuth } from "@/lib/with-auth";
 import { ActionsResponse } from "@/schemas";
 import { Database } from "@/schemas/database.types";
@@ -42,12 +43,12 @@ const editRoleAction = async (
       };
     }
 
-    // 3. Bloquear edição do cargo "Gerente" para proteger a lógica do sistema
-    if (existingRole.name === "Gerente") {
+    // 3. Bloquear edição do nome do cargo "Gerente" para proteger a lógica do sistema
+    if (existingRole.name === "Gerente" && roleData.name !== "Gerente") {
       return {
         success: false,
         error:
-          "O cargo 'Gerente' não pode ser editado para manter a integridade do sistema.",
+          "O nome do cargo 'Gerente' não pode ser alterado para manter a integridade do sistema.",
       };
     }
 
@@ -56,7 +57,7 @@ const editRoleAction = async (
       const { data: duplicateRole, error: duplicateError } = await supabase
         .from("roles")
         .select("id")
-        .eq("name", roleData.name)
+        .eq("name_normalized", normalizeText(roleData.name))
         .neq("id", roleData.id)
         .limit(1);
 
@@ -85,6 +86,12 @@ const editRoleAction = async (
       .eq("id", roleData.id);
 
     if (updateError) {
+      if (updateError.message.includes("duplicate key")) {
+        return {
+          success: false,
+          error: "Já existe um cargo com este nome.",
+        };
+      }
       return {
         success: false,
         error: updateError.message || "Não foi possível atualizar o cargo.",

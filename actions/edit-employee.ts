@@ -2,6 +2,7 @@
 
 import { SupabaseClient } from "@supabase/supabase-js";
 
+import { normalizeText } from "@/lib/normalization";
 import { withAuth } from "@/lib/with-auth";
 import { ActionsResponse } from "@/schemas";
 import { Database } from "@/schemas/database.types";
@@ -95,13 +96,12 @@ const editEmployeeAction = async (
 
     // 5. Verificar se o username já existe em outro funcionário
     if (employeeData.username !== targetEmployee.username) {
-      const { data: existingUsername, error: usernameCheckError } =
-        await supabase
-          .from("employees")
-          .select("id")
-          .eq("username", employeeData.username)
-          .neq("id", employeeData.id)
-          .limit(1);
+      const { data: existingUsername, error: usernameCheckError } = await supabase
+        .from("employees")
+        .select("id")
+        .eq("username_normalized", normalizeText(employeeData.username))
+        .neq("id", employeeData.id)
+        .limit(1);
 
       if (usernameCheckError) {
         return {
